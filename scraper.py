@@ -40,7 +40,7 @@ class Scraper(object):
 
         Returns
         -------
-        parsed html with BeautifulSoup
+        html parsed by BeautifulSoup
         """
         self.field = field
         _url = self.url
@@ -51,22 +51,7 @@ class Scraper(object):
             raise requests.HTTPError(_status_code)
         else:
             self.response = _response
-        self.parsed_html = self.parse_html(html=self.response.text)
-
-    def parse_html(self, html) -> BeautifulSoup:
-        """
-        parse html text with BeautifulSoup
-
-        Arguments
-        ---------
-        html: str
-            string of html
-
-        Returns
-        -------
-        parsed html with BeautifulSoup
-        """
-        return BeautifulSoup(html, 'html5lib')
+        self.parsed_html = BeautifulSoup(self.response.text, 'lxml')
 
     def extract_item(self):
         self.parsed_html.select('#collapsible6')
