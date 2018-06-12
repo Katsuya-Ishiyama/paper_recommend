@@ -10,14 +10,84 @@ CATEGORIES = ['cs']
 
 logger = logging.getLogger('scraper')
 
-category = CATEGORIES[0]
 
-url = BASE_URL.format(category=category)
-response = requests.get(url)
+class Scraper(object):
 
-status_code = response.status_code
-if status_code != 200:
-    logging.warning('{} status code: {}'.format(url, status_code))
-    raise requests.HTTPError(status_code)
+    def __init__(self):
+        self.base_url = 'http://arxiv.org/rss/{field}'
+        self.field = None
+        self.response = None
+        self.parsed_html = None
 
-soup = BeautifulSoup(response.text, 'lxml')
+    @property
+    def url(self):
+        """
+        getter of url
+
+        Returns
+        -------
+        url of arXiv's rss
+        """
+        return self.base_url.format(field=self.field)
+
+    def fetch_rss(self, field: str):
+        """ fetch rss from arXiv
+
+        Arguments
+        ---------
+        field : str
+            field of your expertise. (eg. stat, cs)
+
+        Returns
+        -------
+        parsed html with BeautifulSoup
+        """
+        self.field = field
+        _url = self.url
+        _response = requests.get(_url)
+        _status_code = _response.status_code
+        if _status_code != 200:
+            logging.warning('{} status code: {}'.format(_url, _status_code))
+            raise requests.HTTPError(_status_code)
+        else:
+            self.response = _response
+        self.parsed_html = self.parse_html(html=self.response.text)
+
+    def parse_html(self, html) -> BeautifulSoup:
+        """
+        parse html text with BeautifulSoup
+
+        Arguments
+        ---------
+        html: str
+            string of html
+
+        Returns
+        -------
+        parsed html with BeautifulSoup
+        """
+        return BeautifulSoup(html, 'html5lib')
+
+    def extract_item(self):
+        self.parsed_html.select('#collapsible6')
+        return self.parsed_html.find_all('item')
+
+    def extract_authors(self):
+        return self.parsed_html.find_all('creator')
+
+    def extract_title(self):
+        return self.parsed_html.find_all('title')
+
+    def extract_description(self):
+        return self.parsed_html.find_all('description')
+
+
+if __name__ == '__main__':
+    scraper = Scraper()
+    scraper.fetch_rss(field='stat')
+    authors = scraper.extract_authors()
+    titles = scraper.extract_title()
+    descriptions = scraper.extract_description()
+    for a, t, d in zip(authors, titles, descriptions):
+        print(a, t, d)
+        print()
