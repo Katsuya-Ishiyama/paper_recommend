@@ -1,17 +1,27 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import logging
-
+import re
 import requests
 from bs4 import BeautifulSoup
-
-BASE_URL = 'http://arxiv.org/rss/{category}'
-CATEGORIES = ['cs']
-
-logger = logging.getLogger('scraper')
+from bs4.element import Tag
 
 
-class Scraper(object):
+logger = logging.getLogger('RSSScraper')
+
+
+def get_commandline_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fields',
+                        type=str,
+                        required=True,
+                        nargs='+',
+                        help='Your interested fields.')
+    return parser.parse_args()
+
+
+class RSSScraper(object):
 
     def __init__(self):
         self.base_url = 'http://arxiv.org/rss/{field}'
@@ -52,27 +62,83 @@ class Scraper(object):
         else:
             self.response = _response
         self.parsed_html = BeautifulSoup(self.response.text, 'lxml')
+        self._metadata_src = self.parsed_html.findAll('channel')[0]
+        self._abstract_src = self.parsed_html.find_all('item')
 
-    def extract_item(self):
-        self.parsed_html.select('#collapsible6')
-        return self.parsed_html.find_all('item')
+    def _extract_metadata_internal(self, category: str) -> str:
+        """
+        Extract metadata from fetched html.
 
-    def extract_authors(self):
-        return self.parsed_html.find_all('creator')
+        Arguments
+        ---------
+        category: str
+            category of metadata. eg: date, publisher etc.
 
-    def extract_title(self):
-        return self.parsed_html.find_all('title')
+        Returns
+        -------
+        extracted metadata. all data types are str.
+        """
+        target_tag = '<dc:{category}>'.format(category=category)
+        _meta = None
+        for content in self._metadata_src.contents:
+            if target_tag in str(content):
+                _meta = content.text
+                break
+        return _meta
 
-    def extract_description(self):
-        return self.parsed_html.find_all('description')
+    def extract_metadata(self):
+        """ extract metadata from fetched html. """
+        _meta = {
+            'date': self._extract_metadata_internal('date'),
+            'lang': self._extract_metadata_internal('language'),
+            'publisher': self._extract_metadata_internal('publisher'),
+            'subject': self._extract_metadata_internal('subject')
+        }
+        return _meta
+
+    def extract_paper_abstract(self):
+        _metadata = self.extract_metadata()
+        for tag in self._abstract_src:
+            abstract = {
+                'title': self._extract_title(tag),
+                'description': self._extract_description(tag),
+                'link': self._extract_link(tag),
+                'authors': self._extract_authors(tag)
+            }
+            abstract.update(_metadata)
+            yield abstract
+
+    def _extract_title(self, tag: Tag) -> str:
+        return tag.title.text
+
+    def _extract_description(self, tag: Tag) -> str:
+        desc = tag.description.text
+        soup = BeautifulSoup(desc.replace('\n', ' '), 'xml')
+        normalised = soup.text
+        return normalised
+
+    def _extract_link(self, tag: Tag) -> str:
+        link = re.findall(r'<link/>(.*)\n', str(tag))[0]
+        return link
+
+    def _extract_authors(self, tag: Tag) -> str:
+        creators = re.findall(r'<dc:creator>(.*)</dc:creator>', str(tag))[0]
+        creators_xml = creators.replace('&lt;', '<')
+        creators_xml = creators_xml.replace('&gt;', '>')
+        soup = BeautifulSoup(creators_xml, 'lxml')
+        tags = soup.findAll('a')
+        authors = [{'name': t.text, 'link': t.get('href')} for t in tags]
+        return authors
+
+
+def main() -> object:
+    args = get_commandline_args()
+    scraper = RSSScraper()
+    for field in args.fields:
+        scraper.fetch_rss(field=field)
+        for abstract in scraper.extract_paper_abstract():
+            print(abstract)
 
 
 if __name__ == '__main__':
-    scraper = Scraper()
-    scraper.fetch_rss(field='stat')
-    authors = scraper.extract_authors()
-    titles = scraper.extract_title()
-    descriptions = scraper.extract_description()
-    for a, t, d in zip(authors, titles, descriptions):
-        print(a, t, d)
-        print()
+    main()
