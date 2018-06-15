@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import json
 import logging
 import re
 import requests
@@ -18,6 +19,10 @@ def get_commandline_args():
                         required=True,
                         nargs='+',
                         help='Your interested fields.')
+    parser.add_argument('--output-path',
+                        type=str,
+                        required=True,
+                        help='path of an output json file.')
     return parser.parse_args()
 
 
@@ -134,10 +139,13 @@ class RSSScraper(object):
 def main() -> object:
     args = get_commandline_args()
     scraper = RSSScraper()
-    for field in args.fields:
-        scraper.fetch_rss(field=field)
-        for abstract in scraper.extract_paper_abstract():
-            print(abstract)
+    with open(args.output_path, 'w', encoding='utf-8') as fout:
+        for field in args.fields:
+            scraper.fetch_rss(field=field)
+            for abstract in scraper.extract_paper_abstract():
+                # json.dump(abstract, fout) cannot be used since
+                # I want to break line at each records.
+                fout.write(json.dumps(abstract) + '\n')
 
 
 if __name__ == '__main__':
