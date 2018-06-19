@@ -18,6 +18,7 @@ def get_commandline_args():
 
 
 def main():
+    # TODO: revise to receive interest from a foreign source.
     interest = ['I want to predict mascots\' popularity from its photo using machine learning methodologies.']
 
     args = get_commandline_args()
