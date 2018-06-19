@@ -30,10 +30,13 @@ def extract_most_dissimilar_paper(data: pd.DataFrame) -> pd.DataFrame:
 
 # TODO: implement displaying the authors
 MESSAGE = """*Today's most {recommend_type} paper of your interest*
-Title: {title}
-URL: {link}
+----------
+Title:
+> {title}
+URL:
+> {link}
 Descriptions:
->>> {description}
+> {description}
 """
 
 
