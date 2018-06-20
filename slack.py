@@ -10,7 +10,7 @@ class Slack(object):
         self._conf = self.load_conf()
 
     def load_conf(self) -> dict:
-        with open('.slack_conf.yaml', 'r') as f:
+        with open('paper_recommend/.slack_conf.yaml', 'r') as f:
             _conf = yaml.load(f)
         return _conf
 
