@@ -40,7 +40,7 @@ def main():
     )
     papers.loc[:, 'similarity'] = similarity
 
-    recommend(papers)
+    recommend(papers, interest)
 
 
 if __name__ == '__main__':
