@@ -30,9 +30,10 @@ def extract_most_dissimilar_paper(data: pd.DataFrame) -> pd.DataFrame:
 
 # TODO: implement displaying the authors
 MESSAGE = """*Today's most {recommend_type} paper of your interest*
+----------
 Your Interest:
 > {interest}
-----------
+
 Title:
 > {title}
 
@@ -55,10 +56,13 @@ def generate_recommend_message(data: pd.DataFrame, recommend_type: str, interest
 def recommend(data: pd.DataFrame, interest) -> object:
     slack = Slack()
 
+    _interest = interest[0]
+
     most_similar = extract_most_similar_paper(data)
     most_similar_message = generate_recommend_message(
         data=most_similar,
-        recommend_type='similar'
+        recommend_type='similar',
+        interest=_interest
     )
     slack.post_message(most_similar_message)
 
@@ -66,7 +70,7 @@ def recommend(data: pd.DataFrame, interest) -> object:
     most_dissimilar_message = generate_recommend_message(
         data=most_dissimilar,
         recommend_type='dissimilar',
-        interest=interest[0]
+        interest=_interest
     )
     slack.post_message(most_dissimilar_message)
 
