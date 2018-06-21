@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import argparse
-import json
 import logging
 import re
 import requests
@@ -10,20 +8,6 @@ from bs4.element import Tag
 
 
 logger = logging.getLogger('RSSScraper')
-
-
-def get_commandline_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--fields',
-                        type=str,
-                        required=True,
-                        nargs='+',
-                        help='Your interested fields.')
-    parser.add_argument('--output-path',
-                        type=str,
-                        required=True,
-                        help='path of an output json file.')
-    return parser.parse_args()
 
 
 class RSSScraper(object):
@@ -134,19 +118,3 @@ class RSSScraper(object):
         tags = soup.findAll('a')
         authors = [{'name': t.text, 'link': t.get('href')} for t in tags]
         return authors
-
-
-def main() -> object:
-    args = get_commandline_args()
-    scraper = RSSScraper()
-    with open(args.output_path, 'w', encoding='utf-8') as fout:
-        for field in args.fields:
-            scraper.fetch_rss(field=field)
-            for abstract in scraper.extract_paper_abstract():
-                # json.dump(abstract, fout) cannot be used since
-                # I want to break line at each records.
-                fout.write(json.dumps(abstract) + '\n')
-
-
-if __name__ == '__main__':
-    main()
