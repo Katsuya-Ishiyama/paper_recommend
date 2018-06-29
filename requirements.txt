@@ -1,5 +1,7 @@
 pandas
 requests
 scikit-learn
+scipy
 PyYAML
 beautifulsoup4
+lxml
