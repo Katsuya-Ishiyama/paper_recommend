@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 
-import os
 import json
 import requests
+import yaml
 
 
 class Slack(object):
     def __init__(self):
-        self._webhook = os.environ['SLACK_WEBHOOK']
+        self._conf = self.load_conf()
+
+    def load_conf(self) -> dict:
+        with open('paper_recommend/.slack_conf.yaml', 'r') as f:
+            _conf = yaml.load(f)
+        return _conf
 
     def post_message(self, message: str) -> object:
-        requests.post(url=self._webhook, data=json.dumps({'text': message}))
-
+        url = self._conf['webhook']['url']
+        requests.post(url=url, data=json.dumps({'text': message}))
